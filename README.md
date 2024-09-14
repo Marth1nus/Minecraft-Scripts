@@ -19,5 +19,5 @@ cd .\server
 .\start.bat
 ```
 
-For Newbies who just want a server to run: [Minecraft-Server.bat](https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server.ps1) \
+For Newbies who just want a server to run: [Minecraft-Server.bat](https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server.bat) \
 It just bypasses execution policy issues
