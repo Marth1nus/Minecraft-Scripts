@@ -2,6 +2,12 @@
 
 Download [Minecraft-Server.ps1](https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server.ps1) script (not signed)
 
+Single line Powershell:
+
+```Powershell
+irm "https://marth1nus.github.io/Minecraft-Scripts/Define-Minecraft-Server.ps1" | iex ; Minecraft-Server -StartServer -AcceptEULA
+```
+
 or run in `Powershell.exe`
 
 ```PowerShell
