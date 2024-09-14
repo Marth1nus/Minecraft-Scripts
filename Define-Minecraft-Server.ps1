@@ -1,0 +1,1 @@
+iex "function Minecraft-Server { $(irm "https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server.ps1") }"
