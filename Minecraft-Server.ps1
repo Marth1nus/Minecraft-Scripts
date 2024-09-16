@@ -127,6 +127,7 @@ $filepath = Join-Path $Folder $filename
 
 if (-not (Test-Path $filepath)) {
   try {
+    Write-Output "Starting download of $filepath"
     Invoke-WebRequest -Uri $url -OutFile $filepath
   }
   catch {
@@ -136,6 +137,7 @@ if (-not (Test-Path $filepath)) {
 }
 
 if ($StartServer) {
+  Write-Output "Starting Server in $ServerFolder"
   if (-not (Test-Path $ServerFolder)) {
     New-Item -Path $ServerFolder -ItemType Directory
   }
@@ -149,6 +151,7 @@ if ($StartServer) {
   $javaCommand | Set-Content "start.sh"
   $javaCommand | Invoke-Expression
   if ($AcceptEULA -and (Test-Path "eula.txt")) {
+    Write-Output "Accepting EULA"
     $eula = Get-Content "eula.txt" -Raw
     if ($eula -match "eula=true") {
       Write-Warning "Eula Already Accepted"
