@@ -1,7 +1,49 @@
-# Download and Optionally Start a Minecraft Server
-# Mojang  https://launchermeta.mojang.com/mc/game/version_manifest.json
-# PaperMC https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/77/downloads/paper-1.21.1-77.jar
-# Fabric  https://meta.fabricmc.net/v2/versions/loader/1.21.1/0.16.5/1.0.1/server/jar
+<#
+.SYNOPSIS
+    Download and optionally start a Minecraft server.
+
+.DESCRIPTION
+    This script allows you to download and optionally start a Minecraft server. 
+    You can choose the server type (Mojang, Fabric, or PaperMC), specify the version, 
+    and manage the server folder. You also have the option to automatically accept 
+    the EULA and restart the server if needed.
+
+.PARAMETER ServerType
+    Specifies the type of Minecraft server to download. 
+    Default: Mojang
+    Values: [Mojang, Fabric, PaperMC]
+    - Mojang: Uses the Mojang API to download the Minecraft server jar.
+      Source: https://launchermeta.mojang.com/mc/game/version_manifest.json
+    - PaperMC: Downloads the server jar from the PaperMC API.
+      Source: https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/77/downloads/paper-1.21.1-77.jar
+    - Fabric: Downloads the server jar from the Fabric API.
+      Source: https://meta.fabricmc.net/v2/versions/loader/1.21.1/0.16.5/1.0.1/server/jar
+
+.PARAMETER Version
+    Specifies the Minecraft version to download.
+    Default: latest
+    Accepts a string representing the Minecraft version or keywords such as [latest, latestSnapshot].
+    Example values: 1.21.1, 24w37a
+    Auto-complete is available based on ServerType using their respective APIs.
+
+.PARAMETER Folder
+    Specifies the location where server jar files will be downloaded.
+    Default: -ServerFolder
+
+.PARAMETER StartServer
+    When specified, the script will not only download the server jar but also create and start a Minecraft server in the specified -ServerFolder.
+
+.PARAMETER ServerFolder
+    Specifies the folder where the server will be started, used only when -StartServer is provided.
+    Default: server
+
+.PARAMETER AcceptEULA
+    When -StartServer is specified, this parameter will automatically accept the EULA after the server starts, if needed, and restart the server.
+
+.EXAMPLE
+    Minecraft-Server -StartServer -AcceptEULA
+    Starts a default Minecraft server with the latest version and automatically accepts the EULA.
+#>
 
 param(
   [ValidateSet("Mojang", "PaperMC", "Fabric")]
@@ -103,7 +145,7 @@ if ($StartServer) {
   $jarpath = $jarpath -replace "\\", "/"
   $javaCommand = "java -jar $jarpath nogui"
   $javaCommand | Write-Output
-  $javaCommand | Set-Content "start.cmd"
+  $javaCommand | Set-Content "start.bat"
   $javaCommand | Set-Content "start.sh"
   $javaCommand | Invoke-Expression
   if ($AcceptEULA -and (Test-Path "eula.txt")) {
