@@ -45,8 +45,6 @@ $env:MinecraftServersRoot = "~/Documents/Minecraft/Servers/"
 Minecraft-Server -Start -AcceptEULA -Name AAA
 # This starts a server in "~/Documents/Minecraft/Servers/Minecraft-latest-Server-AAA/"
 
-
 # See The options available
 Get-Help Minecraft-Server -Full
-
 ```

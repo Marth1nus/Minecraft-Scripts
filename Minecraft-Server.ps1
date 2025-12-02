@@ -1,56 +1,85 @@
 <#
 .SYNOPSIS
-    Download and optionally start a Minecraft server.
+  Download and optionally start a Minecraft server.
 
 .DESCRIPTION
-    This script allows you to download and optionally start a Minecraft server. 
-    You can choose the server type (Mojang, Fabric, or PaperMC), specify the version, 
-    and manage the server folder. You also have the option to automatically accept 
-    the EULA and restart the server if needed.
+  This script allows you to download and optionally start a Minecraft server. 
+  You can choose the server type (Mojang, Fabric, or PaperMC), specify the version, 
+  and manage the server folder. You also have the option to automatically accept 
+  the EULA and restart the server if needed.
 
 .PARAMETER Type
-    Specifies the type of Minecraft server to download. 
-    Default: Mojang
-    Values: [Mojang, Fabric, PaperMC]
-    - Mojang: Uses the Mojang API to download the Minecraft server jar.
-      Source: https://launchermeta.mojang.com/mc/game/version_manifest.json
-    - PaperMC: Downloads the server jar from the PaperMC API.
-      Source: https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/77/downloads/paper-1.21.1-77.jar
-    - Fabric: Downloads the server jar from the Fabric API.
-      Source: https://meta.fabricmc.net/v2/versions/loader/1.21.1/0.16.5/1.0.1/server/jar
+  Specifies the type of Minecraft server to download. 
+  Default: Mojang
+  Values: [Mojang, Fabric, PaperMC]
+  - Mojang: Uses the Mojang API to download the Minecraft server jar.
+    Source: https://launchermeta.mojang.com/mc/game/version_manifest.json
+  - PaperMC: Downloads the server jar from the PaperMC API.
+    Source: https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/77/downloads/paper-1.21.1-77.jar
+  - Fabric: Downloads the server jar from the Fabric API.
+    Source: https://meta.fabricmc.net/v2/versions/loader/1.21.1/0.16.5/1.0.1/server/jar
 
 .PARAMETER Version
-    Specifies the Minecraft version to download.
-    Default: latest
-    Accepts a string representing the Minecraft version or keywords such as [latest, latestSnapshot].
-    Example values: 1.21.10, 24w37a
-    Auto-complete is available based on -Type using their respective APIs.
+  Specifies the Minecraft version to download.
+  Default: latest
+  Accepts a string representing the Minecraft version or keywords such as [latest, latestSnapshot].
+  Example values: 1.21.10, 24w37a
+  Auto-complete is available based on -Type using their respective APIs.
 
 .PARAMETER Start
-    Automatically start the server after creating it
+  Automatically start the server after creating it
 
 .PARAMETER Name
-    Specifies the Name that may be used to set the server folder 
-    Default: null
+  Specifies the Name that may be used to set the server folder 
+  Default: null
 
 .PARAMETER Folder
-    Specifies the folder where the server will be started, used only when -StartServer is provided.
-    Default: "Minecraft-$Version-Server-$Name"
+  Specifies the folder where the server will be started, used only when -StartServer is provided.
+  Default: "Minecraft-$Version-Server-$Name"
 
 .PARAMETER JarsFolder
-    Specifies the location where server jar files will be downloaded.
-    Default: -Folder or "env:MinecraftServersRoot\Jars\"
+  Specifies the location where server jar files will be downloaded.
+  Default: -Folder or "env:MinecraftServersRoot\Jars\"
 
 .PARAMETER AcceptEULA
-    Automatically accept the EULA.
-    May have to start the server to generate eula.txt
+  Automatically accept the EULA.
+  May have to start the server to generate eula.txt
 
 .PARAMETER IgnoreEnvMinecraftServersRoot
-    Tells program to ignore $env:MinecraftServersRoot if it exists
+  Tells program to ignore $env:MinecraftServersRoot if it exists
 
-.EXAMPLE
-    Minecraft-Server -Start -AcceptEULA
-    Starts a default Minecraft server with the latest version and automatically accepts the EULA.
+.Example
+  Minecraft-Server -Start -AcceptEULA
+  # Start latest release version of minecraft Mojang server
+
+.Example
+  Minecraft-Server -Start -AcceptEULA -Version latestSnapshot
+  # Start latest snapshot release version of minecraft Mojang server
+
+.Example
+  Minecraft-Server -Start -AcceptEULA -Type Fabric
+  # Start a latest Fabric Modded server
+
+.Example
+  Minecraft-Server -Start -AcceptEULA -Type PaperMC
+  # Start a latest Paper server
+
+.Example
+  Minecraft-Server -Start -AcceptEULA -Version 1.8
+  # Start specific version
+
+.Example
+  `
+  # Start a server using environment variable root folder
+  # You can set the environment variables in settings
+  # For now we set it for the current session only
+  $env:MinecraftServersRoot = "~/Documents/Minecraft/Servers/"
+  Minecraft-Server -Start -AcceptEULA -Name AAA
+  # This starts a server in "~/Documents/Minecraft/Servers/Minecraft-latest-Server-AAA/"
+
+.Example
+  Get-Help Minecraft-Server -Full
+  # See The options available
 #>
 
 param(
