@@ -11,41 +11,42 @@ Get-Help Minecraft-Server
 
 Download [Minecraft-Server.ps1](https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server.ps1) script (not signed) directly
 
-## Start a default server with no hassle
-
-Download [Minecraft-Server.bat](https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server.bat)
-
 ## Start a default server with a one-liner :
 
 ```Powershell
-irm "https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server" | iex ; Minecraft-Server -StartServer -AcceptEULA
+irm "https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server" | iex ; Minecraft-Server -Start -AcceptEULA
 ```
 
-## Example
+## Examples
 
 ```PowerShell
 # Download and define the Minecraft-Server function
 irm "https://marth1nus.github.io/Minecraft-Scripts/Minecraft-Server" | iex
 
 # Start latest release version of minecraft Mojang server
-Minecraft-Server -StartServer -AcceptEULA
+Minecraft-Server -Start -AcceptEULA
 
 # Start latest snapshot release version of minecraft Mojang server
-Minecraft-Server -StartServer -AcceptEULA -Version latestSnapshot
+Minecraft-Server -Start -AcceptEULA -Version latestSnapshot
 
 # Start a latest Fabric Modded server
-Minecraft-Server -StartServer -AcceptEULA -ServerType Fabric
+Minecraft-Server -Start -AcceptEULA -Type Fabric
 
 # Start a latest Paper server
-Minecraft-Server -StartServer -AcceptEULA -ServerType PaperMC
+Minecraft-Server -Start -AcceptEULA -Type PaperMC
 
 # Start specific version
-Minecraft-Server -StartServer -AcceptEULA -Version 1.8
+Minecraft-Server -Start -AcceptEULA -Version 1.8
+
+# Start a server using environment variable root folder
+# You can set the environment variables in settings
+# For now we set it for the current session only
+$env:MinecraftServersRoot = "~/Documents/Minecraft/Servers/"
+Minecraft-Server -Start -AcceptEULA -Name AAA
+# This starts a server in "~/Documents/Minecraft/Servers/Minecraft-latest-Server-AAA/"
+
 
 # See The options available
 Get-Help Minecraft-Server -Full
 
-# Use ./server/start.bat to start the server again in the future
-cd .\server
-.\start.bat
 ```
