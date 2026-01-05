@@ -116,9 +116,10 @@ param(
 )
 
 $UseEnvMinecraftServersRoot = (
+  $env:MinecraftServersRoot -and
   -not $IgnoreEnvMinecraftServersRoot -and
   (Test-Path $env:MinecraftServersRoot) -and
-  ([System.IO.Path]::IsPathRooted($env:MinecraftServersRoot))
+  [System.IO.Path]::IsPathRooted($env:MinecraftServersRoot)
 )
 
 $Folder = & {
@@ -132,10 +133,11 @@ $Folder = & {
     $Folder = "$Folder-$Name"
   }
   if (-not (Test-Path $Folder)) {
-    New-Item -Path $Folder -ItemType Directory -Force -ErrorAction Stop
+    New-Item -Path $Folder -ItemType Directory -Force | Out-Null
   }
   return Resolve-Path $Folder
 }
+Write-Host "Server Folder: $Folder"
 
 $JarsFolder = & {
   if (-not $JarsFolder -and $UseEnvMinecraftServersRoot) {
@@ -145,10 +147,11 @@ $JarsFolder = & {
     $JarsFolder = $Folder
   }
   if (-not (Test-Path $JarsFolder)) {
-    New-Item -Path $JarsFolder -ItemType Directory -Force -ErrorAction Stop
+    New-Item -Path $JarsFolder -ItemType Directory -Force | Out-Null
   }
-  return Resolve-Path $JarsFolder
+  return Resolve-Path "$JarsFolder"
 }
+Write-Host "Server Jars Folder: $JarsFolder"
 
 $url, $jarName = & { # ServerType and Version resolved here
   switch ($Type) {
@@ -219,11 +222,7 @@ $serverCommand = & {
 }
 
 if ($AcceptEULA) {
-  Write-Host "Accepting EULA"
-  if (Test-Path "$Folder/eula.txt") {
-    Write-Host "eula.txt exists"
-  }
-  else {
+  if (-not(Test-Path "$Folder/eula.txt")) {
     Write-Host "Starting Server Once To generate eula.txt"
     & $serverCommand # should exit automatically
   }
@@ -234,8 +233,8 @@ if ($AcceptEULA) {
   }
   else {
     $eulaContent = $eulaContent -replace "eula=false", "eula=true"
-    $eulaContent | Set-Content $eulaPath -ErrorAction Stop
-    $eulaContent | Write-Host
+    Set-Content $eulaPath $eulaContent
+    Write-Host "```````n$eulaContent`n``````"
     Write-Host "EULA has been accepted"
   }
 }
