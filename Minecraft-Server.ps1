@@ -24,62 +24,49 @@
   Default: latest
   Accepts a string representing the Minecraft version or keywords such as [latest, latestSnapshot].
   Example values: 1.21.10, 24w37a
-  Auto-complete is available based on -Type using their respective APIs.
+  Auto-complete is available based on $Type using their respective APIs.
+
+.PARAMETER Name
+  Have the Server Folder be "$env:MinecraftServersRoot\Minecraft-$Version-Server-$Name\"
+  Enables the use of environment variable $env:MinecraftServersRoot
+  Overrides -Folder and -JarsFolder options
+  Default: $null
 
 .PARAMETER Start
   Automatically start the server after creating it
-
-.PARAMETER Name
-  Specifies the Name that may be used to set the server folder 
-  Default: null
-
-.PARAMETER Folder
-  Specifies the folder where the server will be started, used only when -StartServer is provided.
-  Default: "Minecraft-$Version-Server-$Name"
-
-.PARAMETER JarsFolder
-  Specifies the location where server jar files will be downloaded.
-  Default: -Folder or "env:MinecraftServersRoot\Jars\"
 
 .PARAMETER AcceptEULA
   Automatically accept the EULA.
   May have to start the server to generate eula.txt
 
-.PARAMETER IgnoreEnvMinecraftServersRoot
-  Tells program to ignore $env:MinecraftServersRoot if it exists
+.PARAMETER SkipShowSettings
+  Skip the show settings table print
+
+.PARAMETER Folder
+  Server Folder
+  Default: Minecraft-$Version-Server
+
+.PARAMETER JarsFolder
+  Folder where server jars are placed
+  Default: $Folder or if $Name is provided $env:MinecraftServersRoot\Jars\
+  
+.PARAMETER InitialHeapSize
+  Passes -Xms$InitialHeapSize to java
+  
+.PARAMETER MaxHeapSize
+  Passes -Xms$MaxHeapSize to java
 
 .Example
+  # Start a Mojang server on the latest minecraft version in folder .\Minecraft-$Version-Server\
   Minecraft-Server -Start -AcceptEULA
-  # Start latest release version of minecraft Mojang server
 
 .Example
-  Minecraft-Server -Start -AcceptEULA -Version latestSnapshot
-  # Start latest snapshot release version of minecraft Mojang server
+  # Start a Mojang server on the latest minecraft version in folder .\$env:MinecraftServersRoot\Minecraft-$Version-Server-ExampleServerName\
+  Minecraft-Server -Start -AcceptEULA -Name ExampleServerName
 
 .Example
-  Minecraft-Server -Start -AcceptEULA -Type Fabric
-  # Start a latest Fabric Modded server
-
-.Example
-  Minecraft-Server -Start -AcceptEULA -Type PaperMC
-  # Start a latest Paper server
-
-.Example
-  Minecraft-Server -Start -AcceptEULA -Version 1.8
-  # Start specific version
-
-.Example
-  `
-  # Start a server using environment variable root folder
-  # You can set the environment variables in settings
-  # For now we set it for the current session only
-  $env:MinecraftServersRoot = "~/Documents/Minecraft/Servers/"
-  Minecraft-Server -Start -AcceptEULA -Name AAA
-  # This starts a server in "~/Documents/Minecraft/Servers/Minecraft-latest-Server-AAA/"
-
-.Example
-  Get-Help Minecraft-Server -Full
-  # See The options available
+  # Start a Mojang server on the latest minecraft version in folder .\ExampleServerName\
+  Minecraft-Server -Start -AcceptEULA -Folder ExampleServerName
 #>
 
 param(
@@ -105,43 +92,55 @@ param(
       return $versions
     })]
   [string]$Version = "latest",
-  [switch]$Start,
   [string]$Name = $null,
+  [switch]$Start,
+  [switch]$AcceptEULA,
+  [switch]$SkipShowSettings,
   [string]$Folder = $null,
   [string]$JarsFolder = $null,
-  [string]$HeapSize = $null,
-  [string]$MaxHeapSize = $null,
-  [switch]$AcceptEULA,
-  [switch]$IgnoreEnvMinecraftServersRoot
+  [ValidatePattern('^\d+[kKmMgG]$')]
+  [string]$InitialHeapSize = $null,
+  [ValidatePattern('^\d+[kKmMgG]$')]
+  [string]$MaxHeapSize = $null
 )
 
-$UseEnvMinecraftServersRoot = (
-  $env:MinecraftServersRoot -and
-  -not $IgnoreEnvMinecraftServersRoot -and
-  (Test-Path $env:MinecraftServersRoot) -and
-  [System.IO.Path]::IsPathRooted($env:MinecraftServersRoot)
-)
+$MinecraftServersRoot = & {
+  if (-not $Name) { return $null }
+  $MinecraftServersRoot = $env:MinecraftServersRoot
+  while (-not [System.IO.Path]::IsPathRooted($MinecraftServersRoot)) {
+    $MinecraftServersRoot = Read-Host @"
+Environment variable MinecraftServersRoot=`"$MinecraftServersRoot`" is not valid.
+Please Enter a Rooted Path for MinecraftServersRoot
+"@
+  }
+  if (-not (Test-Path $MinecraftServersRoot)) {
+    New-Item -Path $MinecraftServersRoot -ItemType Directory -Force | Out-Null
+  }
+  $MinecraftServersRoot = Resolve-Path $MinecraftServersRoot
+  if ($env:MinecraftServersRoot -ne "$MinecraftServersRoot") {
+    $env:MinecraftServersRoot = "$MinecraftServersRoot"
+    [System.Environment]::SetEnvironmentVariable("MinecraftServersRoot", $env:MinecraftServersRoot, "User")
+    Write-Host "Updated environment variable MinecraftServersRoot=`"$env:MinecraftServersRoot`""
+  }
+  return $MinecraftServersRoot
+}
 
 $Folder = & {
+  if ($Name) {
+    $Folder = "$MinecraftServersRoot\Minecraft-$Version-Server-$Name"
+  }
   if (-not $Folder) {
     $Folder = "Minecraft-$Version-Server"
-  }
-  if ($UseEnvMinecraftServersRoot) {
-    $Folder = Join-Path $env:MinecraftServersRoot ($Folder ?? "")
-  }
-  if ($Name) {
-    $Folder = "$Folder-$Name"
   }
   if (-not (Test-Path $Folder)) {
     New-Item -Path $Folder -ItemType Directory -Force | Out-Null
   }
   return Resolve-Path $Folder
 }
-Write-Host "Server Folder: $Folder"
 
 $JarsFolder = & {
-  if (-not $JarsFolder -and $UseEnvMinecraftServersRoot) {
-    $JarsFolder = Join-Path $env:MinecraftServersRoot "Jars"
+  if ($Name) {
+    $JarsFolder = "$MinecraftServersRoot\Jars"
   }
   if (-not $JarsFolder) {
     $JarsFolder = $Folder
@@ -149,11 +148,11 @@ $JarsFolder = & {
   if (-not (Test-Path $JarsFolder)) {
     New-Item -Path $JarsFolder -ItemType Directory -Force | Out-Null
   }
-  return Resolve-Path "$JarsFolder"
+  return Resolve-Path $JarsFolder
 }
-Write-Host "Server Jars Folder: $JarsFolder"
 
-$url, $jarName = & { # ServerType and Version resolved here
+$Type, $Version, $versionPreResolve, $url, $jarName = & {
+  $versionPreResolve = $Version
   switch ($Type) {
     "Mojang" {
       $versionManifest = Invoke-RestMethod "https://launchermeta.mojang.com/mc/game/version_manifest.json"
@@ -186,11 +185,11 @@ $url, $jarName = & { # ServerType and Version resolved here
       $jarName = "fabric-server-mc.$Version-loader.$loader-launcher.$launcher.jar"
     }
   }
-  return $url, $jarName
+  return $Type, $Version, $versionPreResolve, $url, $jarName
 }
 
 $jarPath = & {
-  $jarPath = Join-Path $JarsFolder $jarName
+  $jarPath = "$JarsFolder\$jarName"
   if (-not(Test-Path $jarPath)) {
     try {
       Write-Host "Starting download of $jarPath"
@@ -206,39 +205,60 @@ $jarPath = & {
 
 $serverCommand = & {
   $javaArgs = @(
-    if ($HeapSize <#    #> -and $HeapSize <#    #> -match '\S+') { "-Xms$HeapSize" }
-    if ($MaxHeapSize <# #> -and $MaxHeapSize <# #> -match '\S+') { "-Xmx$MaxHeapSize" }
+    if ("$InitialHeapSize" <#    #> -match '^\d+[kKmMgG]+$') { "-Xms$InitialHeapSize" }
+    if ("$MaxHeapSize" <#        #> -match '^\d+[kKmMgG]+$') { "-Xmx$MaxHeapSize" }
     "-jar"
     "$jarPath"
     "nogui"
   )
   $javaCommand = "java $($javaArgs -join ' ')"
-  $javaCommand | Write-Host
   $javaCommand | Set-Content (Join-Path $Folder "start.ps1")
   $FolderCaptured = $Folder
   return { 
-    (Start-Process -FilePath java -ArgumentList $javaArgs -WorkingDirectory $FolderCaptured -NoNewWindow -PassThru).WaitForExit()
+    Write-Host "$FolderCaptured> $javaCommand"
+    $proc = Start-Process -FilePath java -ArgumentList $javaArgs -WorkingDirectory $FolderCaptured -NoNewWindow -PassThru
+    $proc.WaitForExit()
+    if ($proc.ExitCode) { throw "java exited with code $($proc.ExitCode)" }
   }.GetNewClosure()
 }
 
 if ($AcceptEULA) {
-  if (-not(Test-Path "$Folder/eula.txt")) {
+  $eulaPath = "$Folder\eula.txt"
+  if (-not(Test-Path $eulaPath)) {
     Write-Host "Starting Server Once To generate eula.txt"
     & $serverCommand # should exit automatically
   }
-  $eulaPath = Join-Path $Folder "eula.txt"
   $eulaContent = Get-Content $eulaPath -Raw
   if ($eulaContent -match "eula=true") {
     Write-Host "EULA was already accepted"
   }
+  elseif ($eulaContent -notmatch "eula=false") {
+    Write-Error "eula content does not contain valid `"eula=false`" line to replace"
+  }
   else {
     $eulaContent = $eulaContent -replace "eula=false", "eula=true"
-    Set-Content $eulaPath $eulaContent
+    $eulaContent | Set-Content $eulaPath
     Write-Host "```````n$eulaContent`n``````"
     Write-Host "EULA has been accepted"
-  }
+  } 
 }
 
-if ($Start) {
-  & $serverCommand
+if (-not $SkipShowSetting) {
+  "Settings Used:" | Write-Host
+  @"
+Option             , Value
+Type               , $Type
+Version            , $versionPreResolve
+Version (Resolved) , $Version
+Name               , $Name
+Start              , $Start
+AcceptEULA         , $AcceptEULA
+SkipShowSetting    , $SkipShowSetting
+Folder             , $Folder
+JarsFolder         , $JarsFolder
+InitialHeapSize    , $InitialHeapSize
+MaxHeapSize        , $MaxHeapSize
+"@ -replace '\s+,', ',' | ConvertFrom-Csv | Format-Table -AutoSize
 }
+
+if ($Start) { & $serverCommand }
