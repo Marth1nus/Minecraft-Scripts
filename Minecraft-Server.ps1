@@ -49,6 +49,10 @@
 .PARAMETER JarsFolder
   Folder where server jars are placed
   Default: $Folder or if $Name is provided $env:MinecraftServersRoot\Jars\
+
+.PARAMETER DuckDNSSubDomain
+  If given, Updates the IPAddress of $DuckDNSSubDomain.duckdns.org to your current public ip address
+  Uses environment variable DuckDNSToken for authentication. Get your token from https://duckdns.org
   
 .PARAMETER InitialHeapSize
   Passes -Xms$InitialHeapSize to java
@@ -98,6 +102,8 @@ param(
   [switch]$SkipShowSettings,
   [string]$Folder = $null,
   [string]$JarsFolder = $null,
+  [ValidatePattern('^[0-9a-zA-z-]+$')]
+  [string]$DuckDNSSubDomain = $null,
   [ValidatePattern('^\d+[kKmMgG]$')]
   [string]$InitialHeapSize = $null,
   [ValidatePattern('^\d+[kKmMgG]$')]
@@ -212,11 +218,16 @@ $serverCommand = & {
     "nogui"
   )
   $javaCommand = "java $($javaArgs -join ' ')"
-  $javaCommand | Set-Content (Join-Path $Folder "start.ps1")
+  $javaCommand | Set-Content "$Folder\start.ps1"
   $FolderCaptured = $Folder
-  return { 
+  return {
     Write-Host "$FolderCaptured> $javaCommand"
-    $proc = Start-Process -FilePath java -ArgumentList $javaArgs -WorkingDirectory $FolderCaptured -NoNewWindow -PassThru
+    $proc = Start-Process `
+      -FilePath java `
+      -ArgumentList $javaArgs `
+      -WorkingDirectory $FolderCaptured `
+      -NoNewWindow `
+      -PassThru
     $proc.WaitForExit()
     if ($proc.ExitCode) { throw "java exited with code $($proc.ExitCode)" }
   }.GetNewClosure()
@@ -243,6 +254,31 @@ if ($AcceptEULA) {
   } 
 }
 
+$DuckDNSDomain = & {
+  if (-not $DuckDNSSubDomain) { return }
+  $DuckDNSDomain = "$DuckDNSSubDomain.duckdns.org"
+  $DuckDNSToken = "$env:DuckDNSToken"
+  while ($DuckDNSToken -notmatch "^[0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}$") {
+    $DuckDNSToken = Read-Host @"
+Environment variable DuckDNSToken is invalid or does not exist.
+Get a token from https://duckdns.org and enter it here.
+Please enter your token
+"@
+  }
+  if ("$env:DuckDNSToken" -ne $DuckDNSToken) {
+    $env:DuckDNSToken = $DuckDNSToken
+    [System.Environment]::SetEnvironmentVariable("DuckDNSToken", $env:DuckDNSToken, "User")
+    Write-Host "Updated environment variable DuckDNSToken"
+  }
+  $DuckDNSToken = $null
+  Write-Host @"
+Updating $DuckDNSDomain
+Ensure that https://duckdns.org contains $DuckDNSSubDomain subdomain
+"@
+  Invoke-RestMethod "https://www.duckdns.org/update?domains=$DuckDNSSubDomain&token=$env:DuckDNSToken&verbose" | Write-Host
+  return $DuckDNSDomain
+}
+
 if (-not $SkipShowSetting) {
   "Settings Used:" | Write-Host
   @"
@@ -258,6 +294,7 @@ Folder             , $Folder
 JarsFolder         , $JarsFolder
 InitialHeapSize    , $InitialHeapSize
 MaxHeapSize        , $MaxHeapSize
+DuckDNSDomain      , $DuckDNSDomain
 "@ -replace '\s+,', ',' | ConvertFrom-Csv | Format-Table -AutoSize
 }
 
